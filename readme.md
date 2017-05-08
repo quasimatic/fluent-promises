@@ -1,0 +1,1 @@
+Create fluent interfaces with methods that return promises
