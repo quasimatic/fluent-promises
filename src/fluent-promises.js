@@ -3,7 +3,7 @@ export default class FluentPromises {
 		this.promise = Promise.resolve();
 	}
 
-	wrapPromise(resolve, reject) {
+	makeFluent(resolve, reject) {
 		return this.waitForThen(resolve, reject);
 	}
 
