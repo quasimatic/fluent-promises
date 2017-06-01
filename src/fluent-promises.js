@@ -1,37 +1,32 @@
-export default class FluentPromises {
+import isNative from './is-native';
+
+class FluentPromises {
 	constructor() {
-		this.promise = Promise.resolve();
+		this.makeFluent = this.then;
+		this.newStack = true;
 	}
 
-	makeFluent(resolve, reject) {
-		return this.waitForThen(resolve, reject);
-	}
-
-	waitForThen(resolve, reject = reason => Promise.reject(reason)) {
-		this.promise = this.promise.then((value) => resolve.call(this, value), (reason) => reject.call(this, reason));
+	then(resolve = result => result, reject = error => Promise.reject(error)) {
+		this.previousPromise = this.newStack ? Promise.resolve(this.callPreventCircularLock(resolve)) : this.previousPromise.then(result => this.callPreventCircularLock(resolve, result), error => this.callPreventCircularLock(reject, error));
+		this.newStack = false;
 		return this;
 	}
 
-	waitForCatch(reject) {
-		this.promise = this.promise.catch((reason) => reject.call(this, reason));
+	catch(reject = error => Promise.reject(error)) {
+		this.previousPromise = this.previousPromise.catch(error => this.callPreventCircularLock(reject, error));
 		return this;
 	}
 
-	then(onFulfilled = value => Promise.resolve(value), onRejected = reason => Promise.reject(reason)) {
-		return this.waitForThen(value => {
-				this.promise = Promise.resolve();
-				return Promise.resolve(onFulfilled(value));
-			},
-			(reason) => {
-				this.promise = Promise.resolve();
-				return Promise.resolve(onRejected(reason));
-			});
-	}
+	callPreventCircularLock(method, arg) {
+		this.newStack = true;
 
-	catch(onRejected = reason => Promise.reject(reason)) {
-		return this.waitForCatch(reason => {
-			this.promise = Promise.resolve();
-			return Promise.resolve(onRejected(reason));
-		});
+		let result = method(arg);
+
+		if (!isNative(method))
+			this.newStack = false;
+
+		return result === this ? result.previousPromise : result;
 	}
 }
+
+export default FluentPromises;
