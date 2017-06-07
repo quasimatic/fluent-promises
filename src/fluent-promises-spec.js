@@ -8,6 +8,7 @@ function return1() {
 function return2() {
 	return 2;
 }
+
 let sandbox = sinon.sandbox.create();
 let spyDo1 = sandbox.spy(return1);
 let spyDo2 = sandbox.spy(return2);
@@ -22,15 +23,11 @@ class TestObject extends FluentPromises {
 	}
 
 	callsDo1AndAdd1() {
-		return this.makeFluent(() => this.do1().then(r => {
-			return r + 1;
-		}));
+		return this.makeFluent(() => this.do1().then(r => r + 1));
 	}
 
 	callsDo2AndAdd2() {
-		return this.makeFluent(() => this.do2().then(r => {
-			return r + 2;
-		}));
+		return this.makeFluent(() => this.do2().then(r => r + 2));
 	}
 
 	doCatchErrorInternalWrapper() {
@@ -157,44 +154,60 @@ describe('Await', () => {
 
 	it('should continue from an inner then call to a basic one', async () => {
 		let test = new TestObject();
-		let result = await test.callsDo2AndAdd2().do1();
+		await test.callsDo2AndAdd2().do1().should.eventually.equal(1);
 		spyDo2.callCount.should.equal(1);
 		spyDo1.callCount.should.equal(1);
-		result.should.equal(1);
 	});
 
 	it('should await entire chain of calls with inner thens', async () => {
 		let test = new TestObject();
-		let result = await test.callsDo1AndAdd1().callsDo2AndAdd2();
+		await test.callsDo1AndAdd1().callsDo2AndAdd2().should.eventually.equal(4);
 		spyDo1.callCount.should.equal(1);
 		spyDo2.callCount.should.equal(1);
-		result.should.equal(4);
 	});
 
 	it('should await entire chain of calls with inner thens', async () => {
 		let test = new TestObject();
-		let result = await test.callsDo1AndAdd1().callsDo2AndAdd2().callsDo2AndAdd2();
+		await test.callsDo1AndAdd1().callsDo2AndAdd2().callsDo2AndAdd2().should.eventually.equal(4);
 		spyDo1.callCount.should.equal(1);
 		spyDo2.callCount.should.equal(2);
-		result.should.equal(4);
 	});
 
 	it('should call chain with some await at various points', async () => {
 		let test = new TestObject();
 		test.callsDo1AndAdd1();
-		let result = await test.callsDo2AndAdd2().callsDo2AndAdd2();
+		await test.callsDo2AndAdd2().callsDo2AndAdd2().should.eventually.equal(4);
 		spyDo1.callCount.should.equal(1);
 		spyDo2.callCount.should.equal(2);
-		result.should.equal(4);
 	});
 
 	it('should call chain with await at various points', async () => {
 		let test = new TestObject();
 		await test.callsDo1AndAdd1();
-		let result = await test.callsDo2AndAdd2().callsDo1AndAdd1();
+		await test.callsDo2AndAdd2().callsDo1AndAdd1().should.eventually.equal(2);
 		spyDo1.callCount.should.equal(2);
 		spyDo2.callCount.should.equal(1);
-		result.should.equal(2);
+	});
+
+	it('should support multiple chai as promised assertions', async () => {
+		let test = new TestObject();
+		await test.callsDo1AndAdd1().should.eventually.equal(2);
+		await test.callsDo2AndAdd2().callsDo1AndAdd1().should.eventually.equal(2);
+		spyDo1.callCount.should.equal(2);
+		spyDo2.callCount.should.equal(1);
+	});
+
+	it('should assert correctly with various types of calls', async () => {
+		let test = new TestObject();
+
+		try {
+			await test.do1().callsDo2AndAdd2().should.eventually.equal(-1);
+			throw new Error('Failed to assert correctly');
+		}
+		catch (e) {
+			if (e.name !== 'AssertionError')
+				throw e;
+		}
 	});
 });
 

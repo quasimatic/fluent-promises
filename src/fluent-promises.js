@@ -7,7 +7,8 @@ class FluentPromises {
 	}
 
 	then(resolve = result => result, reject = error => Promise.reject(error)) {
-		this.previousPromise = this.newStack ? Promise.resolve(this.callPreventCircularLock(resolve)) : this.previousPromise.then(result => this.callPreventCircularLock(resolve, result), error => this.callPreventCircularLock(reject, error));
+		this.previousPromise = this.newStack ? new Promise((innerResolve, innerReject) => this.callPreventCircularLock(resolve).then(innerResolve, innerReject)) : this.previousPromise.then(result => this.callPreventCircularLock(resolve, result), error => this.callPreventCircularLock(reject, error));
+
 		this.newStack = false;
 		return this;
 	}
@@ -25,7 +26,7 @@ class FluentPromises {
 		if (!isNative(method))
 			this.newStack = false;
 
-		return result === this ? result.previousPromise : result;
+		return result === this ? result.previousPromise : Promise.resolve(result);
 	}
 }
 
