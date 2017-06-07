@@ -1,6 +1,6 @@
 {
   "name": "fluent-promises",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Create a fluent interfaces with methods that return promises.",
   "main": "lib/fluent-promises.js",
   "scripts": {
