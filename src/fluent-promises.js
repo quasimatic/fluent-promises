@@ -1,7 +1,7 @@
 import isNative from './is-native';
 
 class FluentPromises {
-	constructor() {
+	constructor(object = this) {
 		let newStack = true;
 
 		function callPreventCircularLock(fp, method, arg) {
@@ -15,16 +15,18 @@ class FluentPromises {
 			return result === fp ? result.previousPromise : Promise.resolve(result);
 		}
 
-		this.makeFluent = this.then = (resolve = result => result, reject = error => Promise.reject(error)) => {
-			this.previousPromise = newStack ? new Promise((innerResolve, innerReject) => callPreventCircularLock(this, resolve).then(innerResolve, innerReject)) : this.previousPromise.then(result => callPreventCircularLock(this, resolve, result), error => callPreventCircularLock(this, reject, error));
+		object.makeFluent = object.then = (resolve = result => result, reject = error => Promise.reject(error)) => {
+			object.previousPromise = newStack ? new Promise((innerResolve, innerReject) => callPreventCircularLock(object, resolve).then(innerResolve, innerReject)) : object.previousPromise.then(result => callPreventCircularLock(object, resolve, result), error => callPreventCircularLock(object, reject, error));
 			newStack = false;
-			return this;
+			return object;
 		};
 
-		this.catch = (reject = error => Promise.reject(error)) => {
-			this.previousPromise = this.previousPromise.catch(error => callPreventCircularLock(this, reject, error));
-			return this;
+		object.catch = (reject = error => Promise.reject(error)) => {
+			object.previousPromise = object.previousPromise.catch(error => callPreventCircularLock(object, reject, error));
+			return object;
 		};
+
+		return object;
 	}
 }
 

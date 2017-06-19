@@ -291,3 +291,20 @@ describe('Rejections', () => {
 			.should.eventually.equal(1);
 	});
 });
+
+describe('Mixin', () => {
+	it('should mixin into a class', () => {
+		class TestMixin {
+			constructor() {
+				new FluentPromises(this);
+			}
+
+			do1() {
+				return this.makeFluent(() => 1);
+			}
+		}
+
+		let test = new TestMixin();
+		return test.do1().should.eventually.equal(1);
+	});
+});
