@@ -197,6 +197,18 @@ describe('Await', () => {
 		spyDo2.callCount.should.equal(1);
 	});
 
+	it('should support inner await calls within thens', async () => {
+		let test = new TestObject();
+		let result = await test.callsDo1AndAdd1().then(async r1 => {
+			let i = await test.callsDo2AndAdd2().then(r2 => {
+				return test.callsDo1AndAdd1().then(r3 => r3 + r2);
+			});
+			return i + r1;
+		});
+
+		result.should.equal(8);
+	});
+
 	it('should assert correctly with various types of calls', async () => {
 		let test = new TestObject();
 
@@ -306,5 +318,48 @@ describe('Mixin', () => {
 
 		let test = new TestMixin();
 		return test.do1().should.eventually.equal(1);
+	});
+
+	it('should support inner await calls within thens', async () => {
+		class TestMixin {
+			constructor() {
+				new FluentPromises(this);
+			}
+
+			do1() {
+				return this.makeFluent(spyDo1);
+			}
+
+			do2() {
+				return this.makeFluent(spyDo2);
+			}
+
+			callsDo1AndAdd1() {
+				return this.makeFluent(() => this.do1().then(r => r + 1));
+			}
+
+			callsDo2AndAdd2() {
+				return this.makeFluent(() => this.do2().then(r => r + 2));
+			}
+
+			doCatchErrorInternalWrapper() {
+				return this.makeFluent(() => {
+				}, () => 'caught error');
+			}
+
+			doReject() {
+				return this.makeFluent(() => Promise.reject('error'));
+			}
+		}
+
+		let test = new TestMixin();
+		let result = await test.callsDo1AndAdd1().then(async r1 => {
+			let i = await test.callsDo2AndAdd2().then(r2 => {
+				return test.callsDo1AndAdd1().then(r3 => r3 + r2);
+			});
+			return i + r1;
+		});
+
+		result.should.equal(8);
 	});
 });
