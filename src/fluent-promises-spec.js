@@ -30,6 +30,19 @@ class TestObject extends FluentPromises {
 		return this.makeFluent(() => this.do2().then(r => r + 2));
 	}
 
+	recursiveCall(exit = false) {
+		if (exit) return Promise.resolve();
+
+		return this.makeFluent(() =>
+			this.do1().then(() => {
+				return new Promise((resolve, reject) => {
+					setTimeout(() => {
+						this.recursiveCall(true).then(resolve, reject);
+					},1)
+				});
+			}));
+	}
+
 	doCatchErrorInternalWrapper() {
 		return this.makeFluent(() => {
 		}, () => 'caught error');
@@ -147,6 +160,14 @@ describe('Fluent Promises', () => {
 		});
 	});
 
+	it('should complete with inner promise and resolve through then of an inner fluent call', () => {
+		let test = new TestObject();
+		return test.recursiveCall()
+			.recursiveCall()
+			.then(() => {
+				spyDo1.callCount.should.equal(2);
+			});
+	});
 });
 
 describe('Await', () => {
