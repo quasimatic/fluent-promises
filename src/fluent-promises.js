@@ -1,4 +1,4 @@
-import isNative from './is-native';
+let isNative = require('./is-native');
 
 class FluentPromises {
 	constructor(object = this) {
@@ -30,4 +30,4 @@ class FluentPromises {
 	}
 }
 
-export default FluentPromises;
+module.exports = FluentPromises;

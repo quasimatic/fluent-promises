@@ -4,7 +4,7 @@
   "description": "Create a fluent interfaces with methods that return promises.",
   "main": "lib/fluent-promises.js",
   "scripts": {
-    "build": "babel src -d lib",
+    "build": "rm -rf lib && cp -r src lib",
     "test": "echo \"Run tests with wallaby\" && exit 1",
     "prepublish": "npm run build"
   },
@@ -16,17 +16,9 @@
   ],
   "author": "Dan Gilkerson <dangilkerson@quasimatic.com>",
   "license": "ISC",
-  "babel": {
-    "presets": [
-      "env"
-    ]
-  },
   "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-polyfill": "^6.23.0",
-    "babel-preset-env": "^1.5.2",
-    "chai": "^4.0.2",
-    "chai-as-promised": "^7.0.0",
-    "sinon": "^2.3.4"
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "sinon": "^4.0.1"
   }
 }

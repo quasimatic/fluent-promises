@@ -1,5 +1,5 @@
-import FluentPromises from './fluent-promises';
-import sinon from 'sinon';
+let FluentPromises = require('./fluent-promises');
+let sinon = require('sinon');
 
 function return1() {
 	return 1;

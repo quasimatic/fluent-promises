@@ -10,4 +10,4 @@ function isNative(value) {
 	return type === 'function' ? nativeRegEx.test(functionToString.call(value)) : (value && type === 'object' && hostConstructorRegEx.test(toString.call(value))) || false;
 }
 
-export default isNative;
+module.exports = isNative;
