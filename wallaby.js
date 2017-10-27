@@ -18,8 +18,10 @@ module.exports = function() {
 
 		setup: function() {
 			let chaiAsPromised = require('chai-as-promised');
+			var sinonChai = require('sinon-chai');
 			chai.should();
 			chai.use(chaiAsPromised);
+			chai.use(sinonChai);
 		}
 	};
 };

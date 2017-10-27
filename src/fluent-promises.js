@@ -1,22 +1,54 @@
-let isNative = require('./is-native');
+let isAwait = require('./is-native');
 
 class FluentPromises {
 	constructor(object = this) {
 		let newStack = true;
+		let awaitHandled = false;
+		let savedValue;
+
+		let methodBeforeAwait;
+		let lastMethod;
 
 		function callPreventCircularLock(fp, method, arg) {
 			newStack = true;
 
+			if (method === methodBeforeAwait) {
+				savedValue = arg;
+			}
+
+			if (awaitHandled) {
+				arg = arg || savedValue;
+				awaitHandled = false;
+			}
+
+			if (isAwait(method)) {
+				awaitHandled = true;
+			}
+
 			let result = method(arg);
 
-			if (!isNative(method))
+			if (!isAwait(method)) {
 				newStack = false;
+			}
 
 			return result === fp ? result.previousPromise : Promise.resolve(result);
 		}
 
 		object.makeFluent = object.then = (resolve = result => result, reject = error => Promise.reject(error)) => {
-			object.previousPromise = newStack ? new Promise((innerResolve, innerReject) => callPreventCircularLock(object, resolve).then(innerResolve, innerReject)) : object.previousPromise.then(result => callPreventCircularLock(object, resolve, result), error => callPreventCircularLock(object, reject, error));
+			if (isAwait(resolve)) {
+				methodBeforeAwait = lastMethod;
+			}
+			else {
+				lastMethod = resolve;
+			}
+
+			if (newStack) {
+				object.previousPromise = new Promise((innerResolve, innerReject) => callPreventCircularLock(object, resolve).then(innerResolve, innerReject));
+			} else {
+				object.previousPromise = object.previousPromise.then(
+					result => callPreventCircularLock(object, resolve, result),
+					error => callPreventCircularLock(object, reject, error));
+			}
 			newStack = false;
 			return object;
 		};

@@ -9,9 +9,15 @@ function return2() {
 	return 2;
 }
 
+function echo(v) {
+	return v;
+}
+
 let sandbox = sinon.sandbox.create();
 let spyDo1 = sandbox.spy(return1);
 let spyDo2 = sandbox.spy(return2);
+let spyEcho = sandbox.spy(echo);
+let spyMethod = sandbox.spy();
 
 class TestObject extends FluentPromises {
 	do1() {
@@ -30,6 +36,14 @@ class TestObject extends FluentPromises {
 		return this.makeFluent(() => this.do2().then(r => r + 2));
 	}
 
+	echo(value) {
+		return this.makeFluent(() => spyEcho(value));
+	}
+
+	returnMethod() {
+		return this.makeFluent(() => spyMethod);
+	}
+
 	recursiveCall(exit = false) {
 		if (exit) return Promise.resolve();
 
@@ -38,7 +52,7 @@ class TestObject extends FluentPromises {
 				return new Promise((resolve, reject) => {
 					setTimeout(() => {
 						this.recursiveCall(true).then(resolve, reject);
-					},1)
+					}, 1);
 				});
 			}));
 	}
@@ -224,6 +238,7 @@ describe('Await', () => {
 			let i = await test.callsDo2AndAdd2().then(r2 => {
 				return test.callsDo1AndAdd1().then(r3 => r3 + r2);
 			});
+
 			return i + r1;
 		});
 
@@ -241,6 +256,28 @@ describe('Await', () => {
 			if (e.name !== 'AssertionError')
 				throw e;
 		}
+	});
+
+	it('should await value as a parameter for another fluent method', async () => {
+		let test = new TestObject();
+
+		return test.echo(await test.do1()).should.eventually.equal(1);
+	});
+
+	it('should forward correct then value for a fluent method returning a method to a then handler', async () => {
+		let test = new TestObject();
+
+		await test.do1().then(await test.returnMethod());
+
+		spyMethod.should.be.calledWith(1);
+	});
+
+	it('should forward correct then value for a fluent method returning a method to a then handler', async () => {
+		let test = new TestObject();
+
+		await test.do1().do2().then(await test.returnMethod());
+
+		spyMethod.should.be.calledWith(2);
 	});
 });
 
