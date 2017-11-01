@@ -4,25 +4,32 @@ class FluentPromises {
 	constructor(object = this) {
 		let newStack = true;
 		let awaitHandled = false;
-		let savedValue;
 
-		let methodBeforeAwait;
-		let lastMethod;
+		let savedValueBeforeAwait;
+		let saveResolveMethod = false;
+		let methodToRecordResultFor;
+
+		function wrapProxy(o) {
+			return new Proxy(o, {
+				get(target, key) {
+					if (key === 'makeFluent' || key === 'then')
+						saveResolveMethod = true;
+
+					return Reflect.get(target, key);
+				}
+			});
+		}
 
 		function callPreventCircularLock(fp, method, arg) {
 			newStack = true;
 
-			if (method === methodBeforeAwait) {
-				savedValue = arg;
+			if (method === methodToRecordResultFor) {
+				savedValueBeforeAwait = arg;
 			}
 
 			if (awaitHandled) {
-				arg = arg || savedValue;
+				arg = arg || savedValueBeforeAwait;
 				awaitHandled = false;
-			}
-
-			if (isAwait(method)) {
-				awaitHandled = true;
 			}
 
 			let result = method(arg);
@@ -30,16 +37,17 @@ class FluentPromises {
 			if (!isAwait(method)) {
 				newStack = false;
 			}
+			else {
+				awaitHandled = true;
+			}
 
 			return result === fp ? result.previousPromise : Promise.resolve(result);
 		}
 
 		object.makeFluent = object.then = (resolve = result => result, reject = error => Promise.reject(error)) => {
-			if (isAwait(resolve)) {
-				methodBeforeAwait = lastMethod;
-			}
-			else {
-				lastMethod = resolve;
+			if (saveResolveMethod) {
+				methodToRecordResultFor = resolve;
+				saveResolveMethod = false;
 			}
 
 			if (newStack) {
@@ -49,6 +57,7 @@ class FluentPromises {
 					result => callPreventCircularLock(object, resolve, result),
 					error => callPreventCircularLock(object, reject, error));
 			}
+
 			newStack = false;
 			return object;
 		};
@@ -58,7 +67,7 @@ class FluentPromises {
 			return object;
 		};
 
-		return object;
+		return wrapProxy(object);
 	}
 }
 

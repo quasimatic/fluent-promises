@@ -28,6 +28,14 @@ class TestObject extends FluentPromises {
 		return this.makeFluent(spyDo2);
 	}
 
+	do555() {
+		return this.makeFluent(() => 555);
+	}
+
+	do999() {
+		return this.makeFluent(() => 999);
+	}
+
 	callsDo1AndAdd1() {
 		return this.makeFluent(() => this.do1().then(r => r + 1));
 	}
@@ -191,7 +199,6 @@ describe('Await', () => {
 		let test = new TestObject();
 		await test.callsDo2AndAdd2().do1().should.eventually.equal(1);
 		spyDo2.callCount.should.equal(1);
-		spyDo1.callCount.should.equal(1);
 	});
 
 	it('should await entire chain of calls with inner thens', async () => {
@@ -263,12 +270,17 @@ describe('Await', () => {
 
 		return test.echo(await test.do1()).should.eventually.equal(1);
 	});
+});
+
+describe('Then handler with awaited fluent method', () => {
+	beforeEach(() => sandbox.reset());
 
 	it('should forward correct then value for a fluent method returning a method to a then handler', async () => {
 		let test = new TestObject();
 
 		await test.do1().then(await test.returnMethod());
 
+		spyMethod.should.be.calledOnce;
 		spyMethod.should.be.calledWith(1);
 	});
 
@@ -277,6 +289,64 @@ describe('Await', () => {
 
 		await test.do1().do2().then(await test.returnMethod());
 
+		spyMethod.should.be.calledOnce;
+		spyMethod.should.be.calledWith(2);
+	});
+
+	it('should forward correct then value for a fluent method returning a method to a then handler and with a call before', async () => {
+		let test = new TestObject();
+
+		return test.do1().then(await test.do2().returnMethod()).then(() => {
+			spyMethod.should.be.calledOnce;
+			spyMethod.should.be.calledWith(1);
+		});
+	});
+
+	it('should forward correct then value for a fluent method returning a method to a then handler after various calls then ', async () => {
+		let test = new TestObject();
+
+		await test.do1().do2();
+		await test.do999().then(await test.returnMethod());
+
+		spyMethod.should.be.calledOnce;
+		spyMethod.should.be.calledWith(999);
+	});
+
+	it('should forward correct then value for a fluent method returning a method to multiple calls and a handler', async () => {
+		let test = new TestObject();
+
+		await test.do1().do2().then(await test.returnMethod());
+
+		spyMethod.should.be.calledOnce;
+		spyMethod.should.be.calledWith(2);
+	});
+
+	it('should forward correct then value for a fluent method returning a method chain to a then handler', async () => {
+		let test = new TestObject();
+
+		await test.do1().do2().then(await test.do999().returnMethod());
+
+		spyMethod.should.be.calledOnce;
+		spyMethod.should.be.calledWith(2);
+	});
+
+	it('should forward correct then value for a fluent method returning a method chain to a then handler after various calls then', async () => {
+		let test = new TestObject();
+
+		await test.do1().do555();
+		await test.do1().do2().then(await test.do999().returnMethod());
+
+		spyMethod.should.be.calledOnce;
+		spyMethod.should.be.calledWith(2);
+	});
+
+	it('should forward correct then value for a fluent method returning a method chain with various calls to a then handler after various calls then', async () => {
+		let test = new TestObject();
+
+		await test.do1().do555();
+		await test.do1().do2().then(await test.do555().do999().returnMethod());
+
+		spyMethod.should.be.calledOnce;
 		spyMethod.should.be.calledWith(2);
 	});
 });
