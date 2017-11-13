@@ -1,4 +1,4 @@
-let isAwait = require('./is-native');
+import isAwait from './is-await';
 
 class FluentPromises {
 	constructor(object = this) {
